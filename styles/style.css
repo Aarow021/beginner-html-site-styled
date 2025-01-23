@@ -32,7 +32,8 @@ html {
 }
 
 body {
-  overflow: hidden;
+  overflow: auto;
+  scrollbar-width: none;
 }
 
 h1 {
