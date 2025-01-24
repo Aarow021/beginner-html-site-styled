@@ -157,9 +157,65 @@ img {
   background-image: url(../images/day-mode.png);
 }
 
+.stats-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 2rem 1rem;
+  border: double 8px #00539F;
+  box-shadow: 5px 5px 0 black;
+  padding: 1rem;
+  border-radius: 10px;
+  background-color: rgb(194, 110, 0);
+  color: black;
+  max-height: 90vh;
+  overflow-y: auto;
+  scrollbar-width: none;
+
+  h2 {
+    text-align: center;
+    font-size: 2em;
+  }
+
+  [class$=container] {
+    display: flex;
+    flex-wrap: wrap;
+    width: 90%;
+    margin-bottom: 1rem;
+    border-bottom: solid rgba(0, 0, 0, 0.541) 3px;
+  }
+
+  .stat-card {
+    width: 7rem;
+    padding: .5rem;
+    text-align: center;
+
+    img {
+      max-width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: contain;
+    }
+
+    img.hidden {
+      filter: brightness(0);
+    }
+
+    p {
+      margin: 0;
+    }
+  }
+
+}
+
 @media screen and (max-width: 768px) {
   .item-particle {
     width: 75px;
     height: 75px;
+  }
+}
+
+@media screen and (max-width: 425px) {
+  .stats-container [class$=container] {
+    justify-content: center;
   }
 }

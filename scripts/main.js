@@ -9,19 +9,43 @@ let mouseX = 0;
 let mouseY = 0;
 let particleQueue = []
 let itemTypes = {
-    'common': ['oak_planks', 'wooden_pickaxe', 'stick', 'wooden_shovel', 'wooden_sword', 'wooden_axe'],
-    'uncommon': ['stone_pickaxe', 'stone_shovel', 'stone_sword', 'stone_axe'],
-    'rare': ['iron_pickaxe', 'iron_shovel', 'iron_sword', 'iron_axe'],
+    'common': ['wooden_pickaxe', 'wooden_shovel', 'wooden_sword', 'wooden_axe', 'oak_planks', 'stick'],
+    'uncommon': ['stone_pickaxe', 'stone_shovel', 'stone_sword', 'stone_axe', 'steak'],
+    'rare': ['iron_pickaxe', 'iron_shovel', 'iron_sword', 'iron_axe', 'potion_of_healing'],
     'epic': ['diamond_pickaxe', 'diamond_shovel', 'diamond_sword', 'diamond_axe', 'golden_apple'],
-    'legendary': ['netherite_pickaxe', 'netherite_shovel', 'netherite_sword', 'netherite_axe'],
-    'mythical': ['beacon', 'elytra', 'dragon_egg', 'enchanted_golden_apple'],
+    'legendary': ['netherite_pickaxe', 'netherite_shovel', 'netherite_sword', 'netherite_axe', 'enchanted_golden_apple'],
+    'mythical': ['beacon', 'elytra', 'dragon_egg', 'totem_of_undying', 'trident'],
     'godly': ['command_block', 'barrier', 'herobrine']
 };
+
+let inventory = {'default': {'rarity': 'common', 'count': 0}}
 
 
 //Waits for period of time (ms)
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function initInv() {
+    let statContainer = document.querySelector('.stats-container');
+    for (rarity of Object.entries(itemTypes)) {
+        let rarityContainer = statContainer.querySelector(`.${rarity[0]}-container`)
+        for (let i = 0; i < rarity[1].length; i++) {
+            inventory[rarity[1][i]] = {'rarity': rarity[0], 'count': 0}
+            let statCard = document.createElement('div');
+            let statImg = document.createElement('img');
+            let statNum = document.createElement('p');
+            statCard.className = `stat-card ${rarity[1][i]}-card`;
+            statImg.className = `${rarity[0]} hidden`;
+            statImg.src = `images/${rarity[1][i]}.webp`;
+            statNum.innerText = '0';
+            statCard.appendChild(statImg);
+            statCard.appendChild(statNum);
+            rarityContainer.appendChild(statCard);
+        }
+        statContainer.appendChild(rarityContainer);
+    }
+    document.querySelector('.body-wrapper').appendChild(statContainer);
 }
 
 //Prompts user to give name, changes h1 content based on name
@@ -113,14 +137,13 @@ function getPos(obj) {
 
 //Adds values to object's transform
 async function applyPhysics(obj, velocity=[0,-5], acceleration=[0,.1]) {
-    let htmlBox = document.getElementsByTagName('html')[0].getBoundingClientRect();
     let time = 0;
-    while(getPos(obj).top < htmlBox.bottom && obj.style.display != 'none') {
+    while(obj.style.display != 'none') {
         obj.style.left = `${getPos(obj).left + velocity[0] + acceleration[0]*time}px`;
         obj.style.top = `${getPos(obj).top + velocity[1] + acceleration[1]*time}px`;
-        await sleep(10);
         time++;
-        if (!obj) return;
+        if (obj.style.display === 'none' || time >= 150) return;
+        await sleep(10);
     }
 }
 
@@ -132,6 +155,15 @@ async function applyFade(obj) {
     }
 }
 
+function invAdd(item) {
+    let statCard = document.getElementsByClassName(`${item}-card`)[0];
+    if (inventory[item].count === 0) {
+        statCard.querySelector('img').classList.remove('hidden');
+    }
+    inventory[item].count++;
+    statCard.querySelector('p').innerText = inventory[item].count;
+}
+
 function generateType() {
     let rarityRoll = Math.random() * 100;
     let rarity;
@@ -141,7 +173,7 @@ function generateType() {
         rarity = 'mythical';
     } else if (rarityRoll <= .5) {
         rarity = 'legendary';
-    } else if (rarityRoll <= 2) {
+    } else if (rarityRoll <= 1.5) {
         rarity = 'epic';
     } else if (rarityRoll <= 10) {
         rarity = 'rare';
@@ -179,6 +211,7 @@ async function generateItem() {
         document.querySelector('.particle-holder').appendChild(item);
     }
     let itemGen = generateType();
+    invAdd(itemGen.item);
     itemDisplay.classList.add(itemGen.rarity);
     itemDisplay.src = `images/${itemGen.item}.webp`;
     item.style.top = `${mouseY - item.height/2}px`;
@@ -202,6 +235,9 @@ if (!localStorage.getItem("name")) {
     myHeading.innerHTML = `Mozilla is cool, ${storedName}`;
 }
 
+//Actual code running starts here
+
+initInv();
 myButton.addEventListener('click', setUserName);
 document.getElementById('spin-degrees').addEventListener('click', changeSpinDeg);
 document.getElementById('spin-speed').addEventListener('click', changeSpinSpeed);
@@ -223,10 +259,13 @@ nightToggle.addEventListener('click', (e) => {
         document.querySelector('.body-wrapper').style.color = 'white';
         document.body.style.backgroundColor = '#002344';
         document.querySelector('html').style.backgroundColor = '#002344';
+        document.querySelector('.stats-container').style.backgroundColor = '#808080';
+        
     } else {
         document.querySelector('.body-wrapper').style.backgroundColor = '';
         document.querySelector('.body-wrapper').style.color = '';
         document.body.style.backgroundColor = '';
         document.querySelector('html').style.backgroundColor = '';
+        document.querySelector('.stats-container').style.backgroundColor = ''
     }
 })
