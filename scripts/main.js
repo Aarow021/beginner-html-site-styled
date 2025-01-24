@@ -2,10 +2,12 @@ let myButton = document.querySelector("#change-user");
 let myHeading = document.querySelector("h1");
 let myImage = document.querySelector("img");
 let nightToggle = document.querySelector(".night-mode");
+const particleLimit = 100;
 let spinDeg = 0;
 let spinSpeed = 1;
 let mouseX = 0;
 let mouseY = 0;
+let particleQueue = []
 let itemTypes = {
     'common': ['oak_planks', 'wooden_pickaxe', 'stick', 'wooden_shovel', 'wooden_sword', 'wooden_axe'],
     'uncommon': ['stone_pickaxe', 'stone_shovel', 'stone_sword', 'stone_axe'],
@@ -15,6 +17,7 @@ let itemTypes = {
     'mythical': ['beacon', 'elytra', 'dragon_egg', 'enchanted_golden_apple'],
     'godly': ['command_block', 'barrier', 'herobrine']
 };
+
 
 //Waits for period of time (ms)
 function sleep(ms) {
@@ -29,6 +32,14 @@ function setUserName() {
     }
     localStorage.setItem("name", myName);
     myHeading.innerHTML = `Mozilla is cool, ${myName}`;
+}
+
+function addQueue(obj, queue=particleQueue) {
+    queue.push(obj);
+}
+
+function takeQueue(queue=particleQueue) {
+    return queue.pop();
 }
 
 //Rotates an object (keeps previous rotation)
@@ -46,7 +57,7 @@ async function foreverSpin(obj, speed=1) {
     if (!obj) return
     if (!obj.style.transform) obj.style.transform = 'rotate(0deg)';
     if (speed)
-    while (obj) {
+    while (obj.style.display != 'none') {
         obj.style.transform = `rotate(${parseFloat(obj.style.transform.substring(obj.style.transform.indexOf('rotate') + 7, obj.style.transform.indexOf('deg'))) + speed}deg)`;
         await sleep(1);
     }
@@ -104,7 +115,7 @@ function getPos(obj) {
 async function applyPhysics(obj, velocity=[0,-5], acceleration=[0,.1]) {
     let htmlBox = document.getElementsByTagName('html')[0].getBoundingClientRect();
     let time = 0;
-    while(getPos(obj).top < htmlBox.bottom) {
+    while(getPos(obj).top < htmlBox.bottom && obj.style.display != 'none') {
         obj.style.left = `${getPos(obj).left + velocity[0] + acceleration[0]*time}px`;
         obj.style.top = `${getPos(obj).top + velocity[1] + acceleration[1]*time}px`;
         await sleep(10);
@@ -145,31 +156,43 @@ function generateType() {
 }
 
 async function generateItem() {
-    let item = document.createElement('div');
-    let itemDisplay = document.createElement('img');
-    let itemGen = generateType()
-    itemDisplay.classList.add('item-display')
+    let item;
+    let itemDisplay;
+    if (particleQueue.length > 1) {
+        item = takeQueue();
+        itemDisplay = item.children[0];
+        itemDisplay.className = 'item-display'
+        item.style.display = 'block';
+        itemDisplay.style.display = 'block'
+        item.style.opacity = 1;
+    } else {
+        if (document.querySelector('.particle-holder').childElementCount > particleLimit) return;
+
+        item = document.createElement('div');
+        item.classList.add('item-particle');
+        item.height = 50;
+        item.width = 50;
+        item.style.position = 'absolute';
+        itemDisplay = document.createElement('img');
+        itemDisplay.classList.add('item-display')
+        item.appendChild(itemDisplay);
+        document.querySelector('.particle-holder').appendChild(item);
+    }
+    let itemGen = generateType();
     itemDisplay.classList.add(itemGen.rarity);
     itemDisplay.src = `images/${itemGen.item}.webp`;
-    item.style.position = 'absolute';
-    item.height = 50;
-    item.width = 50;
     item.style.top = `${mouseY - item.height/2}px`;
     item.style.left = `${mouseX - item.width/2}px`;
-    item.classList.add('item-particle');
-    document.querySelector('.particle-holder').appendChild(item);
-    item.appendChild(itemDisplay);
     let velocity = [Math.random()*(5 - -5) + -5, Math.random()*(-5) - 1]
     applyPhysics(item, velocity);
     foreverSpin(itemDisplay, Math.random() * (2 - -2) + -2);
     await sleep(1500);
     await applyFade(item);
-    itemDisplay.remove();
-    item.remove();
-    itemDisplay, item = null;
-    delete item;
-    delete itemDisplay;
+    item.style.display = 'none';
+    itemDisplay.style.display = 'none';
+    addQueue(item);
 }
+
 
 //Sets or prompts stored name on page load
 if (!localStorage.getItem("name")) {
@@ -186,7 +209,7 @@ document.getElementById('spin-speed').addEventListener('click', changeSpinSpeed)
 myImage.addEventListener('click', (e) => {
     mouseX = e.clientX;
     mouseY = e.clientY;
-    generateItem(e.target.parentElement.parentElement.querySelector('.particle-holder'));
+    generateItem();
 });
 
 //Adds rotate on click to all of body's children
